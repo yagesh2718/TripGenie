@@ -1,6 +1,13 @@
 import streamlit as st
 import requests
 import datetime
+import os
+
+# Try to get from Streamlit secrets first, fallback to os.getenv, and finally default
+try:
+    BACKEND_URL = st.secrets.get("BACKEND_URL", "https://tripgenie-hev2.onrender.com")
+except Exception:
+    BACKEND_URL = os.getenv("BACKEND_URL", "https://tripgenie-hev2.onrender.com")
 
 st.set_page_config(page_title="TripGenie", layout="wide")
 
@@ -38,7 +45,7 @@ if st.sidebar.button("Generate Itinerary"):
         }
         
         try:
-            response = requests.post("http://localhost:8000/api/plan", json=payload)
+            response = requests.post(f"{BACKEND_URL}/api/plan", json=payload)
             response.raise_for_status()
             st.session_state.plan_data = response.json()
             st.success(f"Itinerary generated! (Thread ID: {st.session_state.plan_data['thread_id']})")
@@ -82,7 +89,7 @@ if st.session_state.plan_data:
         if st.button("Export to PDF & Share 📄", type="primary"):
             with st.spinner("Generating PDF and uploading to S3..."):
                 try:
-                    pdf_res = requests.post(f"http://localhost:8000/api/plan/{data['thread_id']}/export-pdf")
+                    pdf_res = requests.post(f"{BACKEND_URL}/api/plan/{data['thread_id']}/export-pdf")
                     pdf_res.raise_for_status()
                     pdf_url = pdf_res.json().get("url")
                     st.success("PDF generated successfully!")
